@@ -6,7 +6,7 @@ import hmac
 import re
 import os
 import boto3
-from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+from botocore.exceptions import NoCredentialsError
 
 from vault_sdk.bridges_common.constants import *
 from vault_sdk.bridges.aws_secrets_manager_sts.constants import *
@@ -165,7 +165,7 @@ class AWSSecretsManagerSTS(object):
             print(self.auth)
             return None, None  # Success
 
-        except boto3.exceptions.NoCredentialsError:
+        except NoCredentialsError:
             # Handle AWS credentials not found error
             return buildExceptionPayload("vaultbridgesdk_e_20003", self), HTTP_INTERNAL_SERVER_ERROR_CODE
 
