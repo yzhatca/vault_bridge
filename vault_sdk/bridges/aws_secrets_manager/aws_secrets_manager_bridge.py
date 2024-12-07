@@ -115,6 +115,7 @@ class AWSSecretsManager(object):
             decoded_auth_header = base64.b64decode(self.auth_string).decode('utf-8')
             
             auth_list = decoded_auth_header.split(";")
+            print(auth_list,len(auth_list))
             if len(auth_list) < 3:
                 target = {"name": VAULT_AUTH_HEADER, "type": "header"}
                 return buildExceptionPayload("vaultbridgesdk_e_20001", self, target), HTTP_NOT_FOUND_CODE         
@@ -125,7 +126,7 @@ class AWSSecretsManager(object):
                     target = {"name": VAULT_AUTH_HEADER, "type": "header"}
                     return buildExceptionPayload("vaultbridgesdk_e_20001", self, target), HTTP_NOT_FOUND_CODE
                 self.auth[temp[0]] = temp[1]
-
+            print(self.auth)
             if self.auth.get(VAULT_URL, "") == "" or self.auth.get(AWS_ACCESS_KEY_ID, "") == "" or self.auth.get(AWS_SECRET_ACCESS_KEY, "") == "":
                 target = {"name": VAULT_AUTH_HEADER, "type": "header"}
                 return buildExceptionPayload("vaultbridgesdk_e_20002", self, target), HTTP_NOT_FOUND_CODE

@@ -8,10 +8,9 @@ import os
 import boto3
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 
-from constants import DEFAULT_VAULT_URL, DEFAULT_ROLE_ARN, DEFAULT_SESSION_NAME, DEFAULT_REGION
 from vault_sdk.bridges_common.constants import *
-from vault_sdk.bridges.aws_secrets_manager.constants import *
-from vault_sdk.bridges.aws_secrets_manager.error_codes import COMPONENT_EXCEPTIONS
+from vault_sdk.bridges.aws_secrets_manager_sts.constants import *
+from vault_sdk.bridges.aws_secrets_manager_sts.error_codes import COMPONENT_EXCEPTIONS
 from vault_sdk.framework.utils import buildExceptionPayload, sendPostRequest, logException, logDebug, getCurrentFilename
 
 FILE_NAME = getCurrentFilename(__file__)
@@ -25,8 +24,6 @@ class AWSSecretsManagerSTS(object):
         self.transaction_id = transaction_id
         self.secret_urn = secret_urn
         self.error_codes = COMPONENT_EXCEPTIONS
-        self.sts_client = None
-        self.assumed_role_credentials = None
 
     # @returns {string} error message if any
     #
@@ -61,7 +58,7 @@ class AWSSecretsManagerSTS(object):
                 target = {"name": SECRET_REFERENCE_METADATA, "type": "query-param"}
                 return buildExceptionPayload("vaultbridgesdk_e_20200", self, target), HTTP_NOT_FOUND_CODE
 
-            if secret_type not in SECRET_TYPES[AWS_SECRETS_MANAGER]:
+            if secret_type not in SECRET_TYPES[AWS_SECRETS_MANAGER_STS]:
                 target = {"name": SECRET_REFERENCE_METADATA, "type": "query-param"}
                 return buildExceptionPayload("vaultbridgesdk_e_20103", self, target), HTTP_NOT_FOUND_CODE
 
@@ -108,35 +105,72 @@ class AWSSecretsManagerSTS(object):
             return buildExceptionPayload("vaultbridgesdk_e_20900", self), HTTP_INTERNAL_SERVER_ERROR_CODE
 
     # @returns {string} error message if any
+    # need to be changed
+    # steps：
+    # 1 extract arn
+    # 2 use arn to generate temporary credentials: access_key,secret_access_key,token
+    # 3 put those variables in self.auth
+
     def extractFromVaultAuthHeader(self):
+        """
+        Extracts the role ARN from the auth header, assumes the role using AWS STS,
+        and populates self.auth with temporary credentials.
+
+        Returns:
+            Tuple: (error_message, HTTP status code) if there's an error, or (None, None) on success.
+        """
         try:
-            # Decode the auth header
+            # Step 1: Decode the auth header
             decoded_auth_header = base64.b64decode(self.auth_string).decode('utf-8')
+
+            # Parse the auth_list
             auth_list = decoded_auth_header.split(";")
-            self.auth = {item.split("=")[0]: item.split("=")[1] for item in auth_list if "=" in item}
+            if len(auth_list) < 2:
+                target = {"name": VAULT_AUTH_HEADER, "type": "header"}
+                return buildExceptionPayload("vaultbridgesdk_e_20001", self, target), HTTP_NOT_FOUND_CODE
 
-            # Use provided values or default values
-            self.vault_url = self.auth.get("VAULT_URL", DEFAULT_VAULT_URL)
-            self.role_arn = self.auth.get("ROLE_ARN", DEFAULT_ROLE_ARN)
-            self.session_name = self.auth.get("SESSION_NAME", DEFAULT_SESSION_NAME)
+            self.auth = {}
+            for item in auth_list:
+                key_value = item.split("=")
+                if len(key_value) < 2:
+                    target = {"name": VAULT_AUTH_HEADER, "type": "header"}
+                    return buildExceptionPayload("vaultbridgesdk_e_20001", self, target), HTTP_NOT_FOUND_CODE
+                self.auth[key_value[0]] = key_value[1]
 
-            if not self.vault_url or not self.role_arn or not self.session_name:
+            # Validate required fields
+            role_arn = self.auth.get(ROLE_ARN,"")
+            session_name = self.auth.get(SESSION_NAME, "default_session")
+            vault_url = self.auth.get(VAULT_URL,"")
+            if not role_arn or not vault_url:
                 target = {"name": VAULT_AUTH_HEADER, "type": "header"}
                 return buildExceptionPayload("vaultbridgesdk_e_20002", self, target), HTTP_NOT_FOUND_CODE
 
-            # Initialize STS client
-            self.sts_client = boto3.client('sts', region_name=DEFAULT_REGION)
+            # Step 2: Extract region from Vault URL
+            error, code = self.extractFromVaultURL(vault_url)
+            if error is not None:
+                return error, code
 
-            # Assume role
-            assumed_role_object = self.sts_client.assume_role(
-                RoleArn=self.role_arn,
-                RoleSessionName=self.session_name
+            # Step 3: Use role ARN to assume the role via AWS STS
+            sts_client = boto3.client("sts", region_name=self.region)  # Replace with your default region if necessary
+            assumed_role_object = sts_client.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=session_name
             )
-            self.assumed_role_credentials = assumed_role_object['Credentials']
-            return None, None
-        except NoCredentialsError:
+
+            # Step 3: Extract temporary credentials
+            credentials = assumed_role_object["Credentials"]
+            self.auth["AWS_ACCESS_KEY_ID"] = credentials["AccessKeyId"]
+            self.auth["AWS_SECRET_ACCESS_KEY"] = credentials["SecretAccessKey"]
+            self.auth["AWS_SESSION_TOKEN"] = credentials["SessionToken"]
+            print(self.auth)
+            return None, None  # Success
+
+        except boto3.exceptions.NoCredentialsError:
+            # Handle AWS credentials not found error
             return buildExceptionPayload("vaultbridgesdk_e_20003", self), HTTP_INTERNAL_SERVER_ERROR_CODE
+
         except Exception as err:
+            # Log the exception and return a generic error payload
             logException(self, "extractFromVaultAuthHeader()", FILE_NAME, str(err))
             return buildExceptionPayload("vaultbridgesdk_e_20900", self), HTTP_INTERNAL_SERVER_ERROR_CODE
 
@@ -214,30 +248,33 @@ class AWSSecretsManagerSTS(object):
             credential_scope = datestamp + '/' + self.region + '/' + self.service + '/' + 'aws4_request'
             string_to_sign = algorithm + '\n' + amzdate + '\n' + credential_scope + '\n' + hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()
 
-            access_key = self.assumed_role_credentials['AccessKeyId']
-            secret_key = self.assumed_role_credentials['SecretAccessKey']
-            session_token = self.assumed_role_credentials['SessionToken']
-
-            signing_key, error, code = self.generateSignature(secret_key, datestamp, self.region, self.service)
+            signing_key, error, code = self.generateSignature(self.auth["AWS_SECRET_ACCESS_KEY"], datestamp, self.region, self.service)
             if error is not None:
                 return error, code
             signature = hmac.new(signing_key, string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
 
-            authorization_header = algorithm + ' ' + 'Credential=' + access_key + '/' + credential_scope + ', ' + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
+            authorization_header = algorithm + ' ' + 'Credential=' + self.auth["AWS_SECRET_ACCESS_KEY"] + '/' + credential_scope + ', ' + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
             self.authorization_header = authorization_header
-            self.session_token = session_token
+            self.session_token = self.auth["AWS_SESSION_TOKEN"]
             return None, None
 
         except Exception as err:
             logException(self, "generateHeaders()", FILE_NAME, str(err))
             return buildExceptionPayload("vaultbridgesdk_e_20900", self), HTTP_INTERNAL_SERVER_ERROR_CODE
 
+    # @returns {dict} extracted_secret - secret in python dict format
+    # @returns {string} error message if any
+    # @returns {number} status code 
     def getSecret(self):
         try:
+            # Prepare the request data
             data = f'{{"SecretId": "{self.secret_id}"}}'
-
             error, code = self.generateHeaders(data)
 
+            if error is not None:
+                return None, error, code
+
+            # Prepare the headers
             headers = {
                 'x-amz-date': self.amzdate,
                 'x-amz-content-sha256': self.payload_hash,
@@ -247,19 +284,19 @@ class AWSSecretsManagerSTS(object):
                 'X-Amz-Security-Token': self.session_token
             }
 
+            # Send the request to AWS Secrets Manager
             logDebug(self, "getSecret()", FILE_NAME, "Sending request to get the secret")
-
             response = sendPostRequest(self.auth[VAULT_URL], headers, data)
+
             if response.status_code != HTTP_SUCCESS_CODE:
                 logException(self, "getSecret()", FILE_NAME, f"{response.text} and status code {response.status_code} returned from {self.auth[VAULT_URL]}")
                 return None, buildExceptionPayload("vaultbridgesdk_e_20500", self), HTTP_INTERNAL_SERVER_ERROR_CODE
             
             return response.text, None, None
-
         except Exception as err:
             logException(self, "getSecret()", FILE_NAME, str(err))
             return None, buildExceptionPayload("vaultbridgesdk_e_20900", self), HTTP_INTERNAL_SERVER_ERROR_CODE
-    
+
     # Format certificate and Secret to replace " " with "\n" for each new line
     def formatCertKeyValue(self, cert, key):
         try:
