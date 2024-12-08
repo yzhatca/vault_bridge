@@ -6,7 +6,7 @@ AWS_SECRETS_MANAGER = "aws-secrets-manager"
 AZURE_KEY_VAULT = "azure-key-vault"
 AWS_SECRETS_MANAGER_STS = "aws-secrets-manager-sts"
 
-VAULT_TYPES = [IBM_SECRETS_MANAGER, AWS_SECRETS_MANAGER, AZURE_KEY_VAULT,AWS_SECRETS_MANAGER_STS]
+VAULT_TYPES = [IBM_SECRETS_MANAGER, AWS_SECRETS_MANAGER, AZURE_KEY_VAULT, AWS_SECRETS_MANAGER_STS]
 SECRET_TYPES = {
     IBM_SECRETS_MANAGER: ["credentials", "certificate", "generic", "key"],
     AWS_SECRETS_MANAGER: ["credentials", "certificate", "generic", "key", "token"],

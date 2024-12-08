@@ -1,0 +1,1 @@
+scp -i vault.pem ./aws_secrets_manager_sts_bridge.py ec2-user@18.118.162.168:/home/ec2-user/vault_bridge_sts/vault_bridge/vault_sdk/bridges/aws_secrets_manager_sts
