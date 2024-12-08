@@ -163,9 +163,11 @@ class AWSSecretsManagerSTS(object):
             self.auth["AWS_SECRET_ACCESS_KEY"] = credentials["SecretAccessKey"]
             self.auth["AWS_SESSION_TOKEN"] = credentials["SessionToken"]
             expiration_iso = credentials["Expiration"].isoformat()
-            print(self.auth)
-            print("\n")
-            print(f"Temporary credentials expiration time (ISO 8601): {expiration_iso}")
+            print("\nAWS Temporary Credentials:")
+            print(f"AWS_ACCESS_KEY_ID: {self.auth['AWS_ACCESS_KEY_ID']}\n"
+                f"AWS_SECRET_ACCESS_KEY: {self.auth['AWS_SECRET_ACCESS_KEY']}\n"
+                f"AWS_SESSION_TOKEN: {self.auth['AWS_SESSION_TOKEN']}\n"
+                f"Expiration Time: {expiration_iso}\n")
             return None, None  # Success
 
         except NoCredentialsError:
