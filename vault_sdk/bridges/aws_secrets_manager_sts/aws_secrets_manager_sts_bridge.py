@@ -253,7 +253,7 @@ class AWSSecretsManagerSTS(object):
                 return error, code
             signature = hmac.new(signing_key, string_to_sign.encode('utf-8'), hashlib.sha256).hexdigest()
 
-            authorization_header = algorithm + ' ' + 'Credential=' + self.auth["AWS_SECRET_ACCESS_KEY"] + '/' + credential_scope + ', ' + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
+            authorization_header = algorithm + ' ' + 'Credential=' + self.auth["AWS_ACCESS_KEY_ID"] + '/' + credential_scope + ', ' + 'SignedHeaders=' + signed_headers + ', ' + 'Signature=' + signature
             self.authorization_header = authorization_header
             self.session_token = self.auth["AWS_SESSION_TOKEN"]
             return None, None
