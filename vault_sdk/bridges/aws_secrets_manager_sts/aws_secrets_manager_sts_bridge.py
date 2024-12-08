@@ -162,7 +162,8 @@ class AWSSecretsManagerSTS(object):
             self.auth["AWS_ACCESS_KEY_ID"] = credentials["AccessKeyId"]
             self.auth["AWS_SECRET_ACCESS_KEY"] = credentials["SecretAccessKey"]
             self.auth["AWS_SESSION_TOKEN"] = credentials["SessionToken"]
-            print(self.auth)
+            expiration_iso = credentials["Expiration"].isoformat()
+            print(self.auth,expiration_iso)
             return None, None  # Success
 
         except NoCredentialsError:
