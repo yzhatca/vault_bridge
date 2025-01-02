@@ -1,7 +1,7 @@
 {
     "extension_point_id": "zen_vault_type_config",
-    "extension_name": "aws-secrets-manager",
-    "display_name": "AWS Secrets Manager",
+    "extension_name": "aws-secrets-manager-sts",
+    "display_name": "AWS Secrets Manager STS",
     "meta": {},
     "details": {
         "category": "bridge",
@@ -27,8 +27,8 @@
                 "label": "SSL certificate"
             }
         ],
-        "label": "AWS Secrets Manager",
-        "description": "AWS Secrets Manager",
+        "label": "AWS Secrets Manager STS",
+        "description": "AWS Secrets Manager STS",
         "json_schema": {
             "type": "object",
             "required": [
@@ -54,7 +54,7 @@
                 "vault_url": {
                     "type": "string",
                     "label": "Vault URL",
-                    "placeholder": "AWS Secrets Manager URL",
+                    "placeholder": "AWS Secrets Manager STS URL",
                     "UIcomponent": "TextArea",
                     "alignment": "details_section",
                     "sequence": 2
