@@ -339,6 +339,8 @@ class AWSSecretsManagerSTS(object):
             if secret_data.get("contentType", "") != "":
                 content_type = secret_data.get("contentType")
             secret_type = self.secret_type.lower()
+            print("secret_string: ",secret_string)
+            print("secret_type: ",secret_type)
             response_secret_data = {}
             
             if secret_type == "credentials":
