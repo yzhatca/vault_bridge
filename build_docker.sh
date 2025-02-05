@@ -8,7 +8,7 @@ set -e
 set -x
 
 scriptdir=`dirname ${0}`
-. ${scriptdir}/../devtest-helpers/utils/common.sh
+. "${scriptdir}/devtest-helpers/utils/common.sh"
 
 cd ${scriptdir}
 fullpath=$(pwd)
