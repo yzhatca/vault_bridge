@@ -3,30 +3,37 @@ FROM registry.access.redhat.com/ubi8/python-39
 # Switch to root user for package installation
 USER root
 
-# install required libraries
+# Install required libraries
 ENV PYTHON_VERSION="3.11"
 RUN yum -y update \
     && yum -y install openssl python${PYTHON_VERSION} python${PYTHON_VERSION}-pip \
     && yum -y clean all
 
-# install required python packages
+# Set working directory
+WORKDIR /app
+
+# Copy application files
+COPY . /app
+
+# Install required Python packages
 RUN python3 -m pip install -I Flask==2.3.2 gunicorn==21.2.0 requests==2.31.0 pyjwt[crypto]==2.8.0
 
-COPY /vault_sdk /vault_sdk
-COPY /scripts /scripts
+# Set correct permissions
 RUN chmod +x /scripts/*.sh
 
-# remove unnecessary libraries
+# Remove unnecessary libraries
 RUN yum remove -y openssl \
     && yum -y clean all
 
-    LABEL name="zen-vault-bridge" \
+LABEL name="zen-vault-bridge" \
     vendor="IBM" \
     version=$IMAGE_VERSION_TAG \
     release=$IMAGE_VERSION_TAG \
     summary="zen-vault-bridge implements integration between IBM cloudpak zen-secrets-v2 and vault hosted in the cloud or on prem" \
     description="zen-vault-bridge implements integration between IBM cloudpak zen-secrets-v2 and vault hosted in the cloud or on prem"
 
-# Switch back to the default user for security
+# Switch back to a non-root user for security
 USER 1001
-ENTRYPOINT ["/bin/bash"]
+
+# Run the application using Gunicorn
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:80", "wsgi:app"]
