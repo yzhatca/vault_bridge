@@ -4,4 +4,4 @@ from framework.utils import load_jwt_public_keys
 load_jwt_public_keys()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    app.run()

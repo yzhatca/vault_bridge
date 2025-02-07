@@ -1,36 +1,43 @@
+# Use Red Hat UBI 8 as the base image
 FROM registry.access.redhat.com/ubi8/python-39
 
 # Switch to root user for package installation
 USER root
 
-# Install required libraries
+# Set Python version
 ENV PYTHON_VERSION="3.11"
+
+# Update system and install Python 3.11
 RUN yum -y update \
     && yum -y install openssl python${PYTHON_VERSION} python${PYTHON_VERSION}-pip \
     && yum -y clean all
 
-# Set working directory
+# Set working directory for the application
 WORKDIR /app
 
-# Copy application files
-COPY . /app
+# Copy the application code (ensure wsgi.py is inside /app)
+COPY ../vault_bridge /app
 
-# Install required Python packages
+# Copy the scripts directory if it exists
+COPY ../scripts /app/scripts
+
+# Ensure all shell scripts in /app/scripts are executable
+RUN chmod +x /app/scripts/*.sh
+
+# Install required Python dependencies
 RUN python3 -m pip install -I Flask==2.3.2 gunicorn==21.2.0 requests==2.31.0 pyjwt[crypto]==2.8.0
 
-# Set correct permissions
-RUN chmod +x /scripts/*.sh
-
-# Remove unnecessary libraries
+# Remove unnecessary OpenSSL libraries to reduce image size
 RUN yum remove -y openssl \
     && yum -y clean all
 
+# Add metadata labels
 LABEL name="zen-vault-bridge" \
     vendor="IBM" \
     version=$IMAGE_VERSION_TAG \
     release=$IMAGE_VERSION_TAG \
-    summary="zen-vault-bridge implements integration between IBM cloudpak zen-secrets-v2 and vault hosted in the cloud or on prem" \
-    description="zen-vault-bridge implements integration between IBM cloudpak zen-secrets-v2 and vault hosted in the cloud or on prem"
+    summary="zen-vault-bridge integrates IBM CloudPak zen-secrets-v2 with Vault" \
+    description="zen-vault-bridge implements integration between IBM CloudPak zen-secrets-v2 and Vault, hosted in the cloud or on-prem."
 
 # Switch back to a non-root user for security
 USER 1001
