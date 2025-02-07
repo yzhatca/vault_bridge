@@ -40,4 +40,4 @@ USER 1001
 EXPOSE 8043
 
 # Run the application using Gunicorn, binding to 8043
-CMD ["gunicorn", "-b", "0.0.0.0:8043", "wsgi:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8043", "wsgi.py"]
