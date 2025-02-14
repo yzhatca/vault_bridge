@@ -1,6 +1,6 @@
 from flask import Flask, request, json
 import logging
-from framework.utils import authenticate, validateParams, validateParamsForBulkRequest, buildExceptionResponse, buildFrameworkExceptionPayload, \
+from .framework.utils import authenticate, validateParams, validateParamsForBulkRequest, buildExceptionResponse, buildFrameworkExceptionPayload, \
                             bulkThreadFunction, logFrameworkDebug, logFrameworkException, getCurrentFilename
 from bridges_common.constants import *
 from bridges_common.bridge_lookup import CLASS_LOOKUP
