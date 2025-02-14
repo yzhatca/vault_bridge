@@ -4,27 +4,30 @@ FROM registry.access.redhat.com/ubi8/python-39
 # Switch to root user for package installation
 USER root
 
-# Set Python version
+# Set Python version as an environment variable
 ENV PYTHON_VERSION="3.11"
 
-# Update system and install Python 3.11
+# Update the system and install Python 3.11 along with pip
 RUN yum -y update \
     && yum -y install openssl python${PYTHON_VERSION} python${PYTHON_VERSION}-pip \
     && yum -y clean all
 
-# Set working directory for the application
+# Set Python 3.11 as the default version
+RUN alternatives --set python /usr/bin/python3.11
+
+# Set the working directory for the application
 WORKDIR /app
 
-# Copy the entire vault_bridge directory
-COPY ../vault_bridge /app/vault_bridge 
-COPY ../public_key   /app/public_key
+# Copy the application source code
+COPY ../vault_bridge /app/vault_bridge
+COPY public_key /app/public_key
 
-# 设置环境变量
+# Set environment variables required by the application
 ENV JWT_PUBLIC_KEY_PATH=/app/public_key/public_key.pem
 
-# Install required Python dependencies, including boto3 and botocore
-RUN python3 -m pip install -I Flask==2.3.2 gunicorn==21.2.0 requests==2.31.0 \
-    pyjwt[crypto]==2.8.0 boto3==1.34.30 botocore==1.34.30
+# Install required Python dependencies
+RUN python3.11 -m pip install --no-cache-dir -I Flask==2.3.2 gunicorn==21.2.0 \
+    requests==2.31.0 pyjwt[crypto]==2.8.0 boto3==1.34.30 botocore==1.34.30
 
 # Remove unnecessary OpenSSL libraries to reduce image size
 RUN yum remove -y openssl \
@@ -38,11 +41,11 @@ LABEL name="zen-vault-bridge" \
     summary="zen-vault-bridge integrates IBM CloudPak zen-secrets-v2 with Vault" \
     description="zen-vault-bridge implements integration between IBM CloudPak zen-secrets-v2 and Vault, hosted in the cloud or on-prem."
 
-# Switch back to a non-root user for security
+# Switch back to a non-root user for security reasons
 USER 1001
 
 # Expose application port (8043 instead of 8443)
 EXPOSE 8043
 
-# Run the application using Gunicorn, now pointing to the correct module
-CMD ["gunicorn", "-b", "0.0.0.0:8043", "vault_bridge.wsgi:app"]
+# Start the application using Gunicorn with the correct module path
+CMD ["gunicorn", "-b", "0.0.0.0:8043", "vault_bridge.vault_sdk.wsgi:app"]
