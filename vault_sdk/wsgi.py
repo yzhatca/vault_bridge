@@ -1,4 +1,4 @@
-from routes import app
+from .routes import app
 from framework.utils import load_jwt_public_keys 
 
 load_jwt_public_keys()
