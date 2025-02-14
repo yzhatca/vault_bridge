@@ -7,7 +7,7 @@ USER root
 # Set Python version as an environment variable
 ENV PYTHON_VERSION="3.11"
 
-# Update the system and install Python 3.11 along with pip
+# Update system and install Python 3.11 along with pip
 RUN yum -y update \
     && yum -y install openssl python${PYTHON_VERSION} python${PYTHON_VERSION}-pip \
     && yum -y clean all
@@ -24,6 +24,9 @@ COPY public_key /app/public_key
 
 # Set environment variables required by the application
 ENV JWT_PUBLIC_KEY_PATH=/app/public_key/public_key.pem
+
+# Set Python path to include the application directory
+ENV PYTHONPATH="/app/vault_bridge"
 
 # Install required Python dependencies
 RUN python3.11 -m pip install --no-cache-dir -I Flask==2.3.2 gunicorn==21.2.0 \
@@ -48,4 +51,4 @@ USER 1001
 EXPOSE 8043
 
 # Start the application using Gunicorn with the correct module path
-CMD ["gunicorn", "-b", "0.0.0.0:8043", "vault_bridge.vault_sdk.wsgi:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:8043", "--chdir", "/app/vault_bridge", "vault_sdk.wsgi:app"]
