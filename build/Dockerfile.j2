@@ -17,7 +17,7 @@ WORKDIR /app
 
 # Copy the entire vault_bridge directory
 COPY ../vault_bridge /app/vault_bridge 
-COPY ../../public_key   /app/public_key
+COPY ../public_key   /app/public_key
 
 # 设置环境变量
 ENV JWT_PUBLIC_KEY_PATH=/app/public_key/public_key.pem
