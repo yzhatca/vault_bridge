@@ -44,4 +44,9 @@ LABEL name="zen-vault-bridge" \
 LABEL org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.vcs-url=$VCS_URL
 USER 1001
-ENTRYPOINT ["/bin/bash"]
+
+# Expose application port (8043 instead of 8443)
+EXPOSE 8043
+
+# Start the application using Gunicorn with the correct module path
+CMD ["gunicorn", "-b", "0.0.0.0:8043", "--chdir", "/app/vault_bridge", "vault_sdk.wsgi:app"]
