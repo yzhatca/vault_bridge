@@ -22,8 +22,9 @@ WORKDIR /app
 COPY ../vault_bridge /app/vault_bridge
 COPY certs /app/certs
 
-# Ensure the script has execution permission
-RUN chmod +x /app/vault_bridge/scripts/start_server.sh
+# Ensure the entire scripts directory and files have execution permissions
+RUN chmod -R +x /app/vault_bridge/scripts \
+    && chown -R 1001:1001 /app/vault_bridge/scripts
 
 # Set environment variables required by the application
 ENV JWT_PUBLIC_KEY_PATH=/app/certs/jwt/public_key.pem
@@ -46,7 +47,7 @@ LABEL name="zen-vault-bridge" \
     description="zen-vault-bridge implements integration between IBM CloudPak zen-secrets-v2 and Vault, hosted in the cloud or on-prem."
 
 # Switch back to a non-root user for security reasons
-USER 1001
+# USER 1001
 
 # Expose application port (8043 instead of 8443)
 EXPOSE 8043
