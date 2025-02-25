@@ -30,6 +30,10 @@ ENV TLS_KEY_FILE_PATH=/app/certs/tls.key
 # Set Python path to include the application directory
 ENV PYTHONPATH="/app/vault_bridge"
 
+RUN chmod +x /app/vault_bridge/scripts/start_server.sh
+RUN chmod +x /app/vault_bridge/scripts/setup_local.sh
+RUN chmod +x /app/vault_bridge/scripts/start_local.sh
+
 # Install required Python dependencies
 RUN python3.11 -m pip install --no-cache-dir -I Flask==2.3.2 gunicorn==21.2.0 \
     requests==2.31.0 pyjwt[crypto]==2.8.0 boto3==1.34.30 botocore==1.34.30
