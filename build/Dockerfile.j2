@@ -22,6 +22,9 @@ WORKDIR /app
 COPY ../vault_bridge /app/vault_bridge
 COPY certs /app/certs
 
+# Ensure the script has execution permission
+RUN chmod +x /app/vault_bridge/scripts/start_server.sh
+
 # Set environment variables required by the application
 ENV JWT_PUBLIC_KEY_PATH=/app/certs/jwt/public_key.pem
 ENV TLS_CERTIFICATE_FILE_PATH=/app/certs/tls.crt
@@ -30,17 +33,9 @@ ENV TLS_KEY_FILE_PATH=/app/certs/tls.key
 # Set Python path to include the application directory
 ENV PYTHONPATH="/app/vault_bridge"
 
-RUN chmod +x /app/vault_bridge/scripts/start_server.sh
-RUN chmod +x /app/vault_bridge/scripts/setup_local.sh
-RUN chmod +x /app/vault_bridge/scripts/start_local.sh
-
 # Install required Python dependencies
 RUN python3.11 -m pip install --no-cache-dir -I Flask==2.3.2 gunicorn==21.2.0 \
     requests==2.31.0 pyjwt[crypto]==2.8.0 boto3==1.34.30 botocore==1.34.30
-
-# Remove unnecessary OpenSSL libraries to reduce image size
-RUN yum remove -y openssl \
-    && yum -y clean all
 
 # Add metadata labels
 LABEL name="zen-vault-bridge" \
@@ -56,5 +51,5 @@ USER 1001
 # Expose application port (8043 instead of 8443)
 EXPOSE 8043
 
-# Start the application using Gunicorn with the correct module path
-CMD ["gunicorn", "-b", "0.0.0.0:8043", "--chdir", "/app/vault_bridge", "vault_sdk.wsgi:app"]
+# Start the application using the script
+ENTRYPOINT ["/app/vault_bridge/scripts/start_server.sh"]
