@@ -33,15 +33,9 @@
             "type": "object",
             "required": [
                 "bridge_url",
-                "vault_url",
-                "access_key_id",
-                "secret_access_key"
+                "vault_url"
             ],
             "optional": [],
-            "credentials": [
-                "access_key_id",
-                "secret_access_key"
-            ],
             "properties": {
                 "bridge_url": {
                     "type": "string",
@@ -57,23 +51,6 @@
                     "placeholder": "AWS Secrets Manager STS URL",
                     "UIcomponent": "TextArea",
                     "alignment": "details_section",
-                    "sequence": 2
-                },
-                "access_key_id": {
-                    "type": "string",
-                    "label": "Access key ID",
-                    "placeholder": "AWS access key ID",
-                    "UIcomponent": "TextArea",
-                    "alignment": "authentication_section",
-                    "sequence": 1
-                },
-                "secret_access_key": {
-                    "type": "string",
-                    "label": "Secret access key",
-                    "placeholder": "AWS Secret access key",
-                    "UIcomponent": "TextArea",
-                    "password": true,
-                    "alignment": "authentication_section",
                     "sequence": 2
                 }
             }
