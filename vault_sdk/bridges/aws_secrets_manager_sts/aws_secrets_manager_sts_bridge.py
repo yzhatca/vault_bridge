@@ -150,7 +150,7 @@ class AWSSecretsManagerSTS(object):
             if error is not None:
                 return error, code
 
-            # Step 3: Use role ARN to assume the role via AWS STS
+            # Use role ARN to assume the role via AWS STS
             sts_client = boto3.client("sts", region_name=self.region)  # Replace with your default region if necessary
             assumed_role_object = sts_client.assume_role(
                 RoleArn=role_arn,
